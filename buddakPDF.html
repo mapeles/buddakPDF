@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PDF 선명화 업스케일러</title>
+<title>부딱 PDF</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -37,32 +37,23 @@ fieldset{border:0;padding:0;margin:0;min-width:0}details{margin-top:18px;border-
 </style>
 </head>
 <body><main>
-<h1>PDF 선명화 업스케일러</h1>
+<h1>부딱 PDF</h1>
 <p class="s">스캔한 문서를 더 읽기 편하게. PDF 처리는 브라우저 안에서 이루어집니다.</p>
 <div class="card" id="drop" role="button" tabindex="0" aria-label="PDF 파일 선택"><div id="dropt">PDF를 여기에 끌어놓거나 눌러서 선택</div></div>
 <input type="file" id="file" accept="application/pdf,.pdf" class="hide">
-<p class="hint" id="startup">처음 열 때 인터넷 연결이 필요합니다. 처리 라이브러리만 불러오며 PDF 파일은 업로드하지 않습니다.</p>
+<p class="hint" id="startup">처음 열 때 인터넷 연결이 필요합니다. PDF 파일은 업로드하지 않고 브라우저에서 처리합니다.</p>
 <div id="work" class="hide">
 <div class="card"><fieldset id="settings"><div class="row">
-<div><label for="dpi">출력 해상도</label><select id="dpi"><option value="200">200 DPI · 작은 용량</option><option value="300" selected>300 DPI · 권장</option><option value="400">400 DPI · 정밀</option><option value="600">600 DPI · 큰 용량</option></select></div>
-<div><label id="sh-label">샤프닝</label><div class="segments" role="radiogroup" aria-labelledby="sh-label"><label><input type="radio" name="sh" value="0.5"> 약</label><label><input type="radio" name="sh" value="1" checked> 보통</label><label><input type="radio" name="sh" value="1.7"> 강</label></div></div>
-</div><p class="hint">사진·옅은 필기는 ‘약’, 일반 문서는 ‘보통’을 권장합니다. ‘강’은 글자 주변 테두리가 두드러질 수 있습니다.</p>
-<details><summary>고급옵션</summary><div class="row">
-<div><label for="mode">문서 색상</label><select id="mode"><option value="gray">회색조 · 일반 문서</option><option value="color">컬러 유지 · 도장 / 사진</option><option value="bw">흑백 2색 · 글자 위주 문서</option></select><p class="hint">흑백 2색은 사진과 옅은 필기가 손실될 수 있습니다.</p></div>
-<div><label for="format">저장 품질</label><select id="format"><option value="jpeg">고품질 JPEG · 용량 균형</option><option value="png">무손실 PNG · 글자 보존 우선</option></select><p class="hint">PNG는 추가 압축 손실이 없지만 파일이 커질 수 있습니다.</p></div>
-<div><label for="ga">글자 진하기 <b id="v_ga">1.05</b></label><input type="range" id="ga" min="0.7" max="1.6" step="0.05" value="1.05"></div>
-<div><label for="wh">흰 배경 기준 <b id="v_wh">250</b></label><input type="range" id="wh" min="210" max="255" step="1" value="250"><p class="hint">낮추면 배경이 밝아지지만 옅은 내용도 사라질 수 있습니다.</p></div>
-<label class="chk"><input type="checkbox" id="bg"> 종이 배경 밝기 균일화</label>
-<label class="chk"><input type="checkbox" id="denoise"> 약한 노이즈 완화</label>
-<div><label for="threshold">흑백 2색 기준 <b id="v_threshold">170</b></label><input type="range" id="threshold" min="80" max="220" value="170" disabled></div>
-<div><button type="button" class="secondary" id="reset">권장 설정으로 초기화</button></div>
-</div><p class="hint">배경 보정은 그림자·회색기를 줄입니다. 사진이나 색지 문서는 꺼두세요. 노이즈 완화는 작은 글자도 부드러워질 수 있어 기본으로 꺼져 있습니다.</p></details></fieldset></div>
+<div><label for="dpi">입력 렌더링 해상도</label><select id="dpi"><option value="200">200 DPI · 작은 용량</option><option value="300" selected>300 DPI · 권장</option><option value="400">400 DPI · 정밀</option><option value="600">600 DPI · 큰 용량</option></select></div>
+<div><label id="sh-label">샤프닝</label><div class="segments" role="radiogroup" aria-labelledby="sh-label"><label><input type="radio" name="sh" value="0.8"> 약</label><label><input type="radio" name="sh" value="1.6" checked> 보통</label><label><input type="radio" name="sh" value="2.4"> 강</label></div></div>
+</div><p class="hint">모든 단계에 배경 보정·노이즈 완화·1.5배 업스케일·대비 조정을 적용합니다. ‘보통’은 Python의 언샤프 강도 1.6과 같습니다.</p>
+</fieldset></div>
 <div class="card" id="pv"><div class="chk" style="justify-content:space-between;flex-wrap:wrap;margin-bottom:10px"><label for="page">미리보기 페이지 <input type="number" id="page" value="1" min="1" step="1"> / <span id="pages">1</span></label><label class="chk"><input type="checkbox" id="zoom"> 100% 확대</label></div>
 <p class="hint" id="previewStatus" role="status"></p><div class="prev"><div><small>원본 렌더링</small><canvas id="c0"></canvas></div><div><small>보정 후 · 저장 전</small><canvas id="c1"></canvas></div></div>
-<p class="hint">미리보기는 최대 160 DPI입니다. 실제 저장 해상도와 압축에 따라 세부 표현은 달라집니다.</p></div>
+<p class="hint">미리보기는 최대 160 DPI로 렌더링합니다. 저장 결과는 선택한 DPI와 원본 PDF 이미지에 따라 달라질 수 있습니다.</p></div>
 <div class="actions"><button id="go">전체 페이지 변환 후 PDF 저장</button><button class="secondary hide" id="cancel">중단</button></div>
 <div id="bar" role="progressbar" aria-label="변환 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><div id="msg" role="status" aria-live="polite"></div>
-<p class="hint">원본에 없는 디테일을 복원하는 AI 업스케일링은 아닙니다. 출력 PDF는 페이지 이미지로 저장되어 기존 검색·텍스트 선택·링크는 유지되지 않습니다. 큰 문서는 낮은 DPI부터 시도하세요.</p>
+<p class="hint">브라우저가 지원하면 최대 2개 페이지의 이미지 보정을 병렬로 처리합니다. Python의 pdfimages·OpenCV와 픽셀 단위로 동일하지는 않습니다. 출력 PDF는 페이지 이미지로 저장되어 기존 검색·텍스트 선택·링크는 유지되지 않습니다. 큰 문서는 낮은 DPI부터 시도하세요.</p>
 </div></main><script>
 const $=id=>document.getElementById(id);
 const tick=()=>new Promise(r=>setTimeout(r,0));
@@ -70,7 +61,7 @@ let doc=null,base='out',busy=false,loading=false,cancelled=false,revision=0,time
 const available=!!(window.pdfjsLib&&window.jspdf);
 if(available)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 else $('startup').textContent='필요한 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.';
-const opts=()=>({dpi:+$('dpi').value,sh:+document.querySelector('[name=sh]:checked').value,ga:+$('ga').value,wh:+$('wh').value,bg:$('bg').checked,denoise:$('denoise').checked,mode:$('mode').value,threshold:+$('threshold').value,format:$('format').value});
+const opts=()=>({dpi:+$('dpi').value,sh:+document.querySelector('[name=sh]:checked').value});
 function lock(on){$('settings').disabled=on;$('page').disabled=on;$('go').disabled=on;$('file').disabled=on;$('drop').setAttribute('aria-disabled',String(on));}
 const drop=$('drop'),inp=$('file');
 drop.onclick=()=>{if(!busy&&!loading&&available)inp.click()};
@@ -92,57 +83,110 @@ async function load(f){
 async function render(n,dpi){
  const p=await doc.getPage(n),unit=p.getViewport({scale:1}),v=p.getViewport({scale:dpi/72});
  const w=Math.ceil(v.width),h=Math.ceil(v.height);
- if(w*h>24000000||w>16384||h>16384)throw new Error('페이지가 너무 큽니다. 출력 DPI를 낮춰 주세요.');
+ if(w*h>10000000||w*1.5>16384||h*1.5>16384)throw new Error('페이지가 너무 큽니다. 입력 렌더링 DPI를 낮춰 주세요.');
  const c=document.createElement('canvas');c.width=w;c.height=h;
  try{const x=c.getContext('2d',{willReadFrequently:true});await p.render({canvasContext:x,viewport:v,background:'rgb(255,255,255)'}).promise;
  return {c,pw:unit.width,ph:unit.height};}catch(e){c.width=c.height=0;throw e;}finally{p.cleanup();}
 }
-function boxBlur(src,w,h,r){
-  const t=new Float32Array(src.length),o=new Float32Array(src.length),k=2*r+1;
-  for(let y=0;y<h;y++){const R=y*w;let a=0;
-    for(let i=-r;i<=r;i++)a+=src[R+Math.min(Math.max(i,0),w-1)];
-    for(let x=0;x<w;x++){t[R+x]=a/k;a+=src[R+Math.min(x+r+1,w-1)]-src[R+Math.max(x-r,0)]}}
-  for(let x=0;x<w;x++){let a=0;
-    for(let i=-r;i<=r;i++)a+=t[Math.min(Math.max(i,0),h-1)*w+x];
-    for(let y=0;y<h;y++){o[y*w+x]=a/k;a+=t[Math.min(y+r+1,h-1)*w+x]-t[Math.max(y-r,0)*w+x]}}
-  return o;
+function makeCanvas(w,h){const c=typeof OffscreenCanvas==='undefined'?document.createElement('canvas'):new OffscreenCanvas(w,h);c.width=w;c.height=h;return c;}
+function grayCanvas(values,w,h){
+ const c=makeCanvas(w,h);
+ const x=c.getContext('2d'),im=x.createImageData(w,h);
+ for(let i=0;i<values.length;i++){const k=i*4;im.data[k]=im.data[k+1]=im.data[k+2]=values[i];im.data[k+3]=255;}
+ x.putImageData(im,0,0);return c;
 }
-function bgEstimate(L,w,h){            // 종이 밝기 추정: 블록 평균 → 최대값 팽창 → 블러 → 보간
-  const f=Math.max(4,Math.round(Math.max(w,h)/350)),sw=Math.ceil(w/f),sh=Math.ceil(h/f);
-  let s=new Float32Array(sw*sh),cnt=new Float32Array(sw*sh);
-  for(let y=0;y<h;y++){const R=(y/f|0)*sw;for(let x=0;x<w;x++){const j=R+(x/f|0);s[j]+=L[y*w+x];cnt[j]++}}
-  for(let i=0;i<s.length;i++)s[i]/=cnt[i];
-  const d=4,m=new Float32Array(s.length);
-  for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){let mx=0;
-    for(let dy=-d;dy<=d;dy++){const yy=Math.min(Math.max(y+dy,0),sh-1);
-      for(let dx=-d;dx<=d;dx++){const v=s[yy*sw+Math.min(Math.max(x+dx,0),sw-1)];if(v>mx)mx=v}}
-    m[y*sw+x]=mx}
-  const b=boxBlur(m,sw,sh,2),bg=new Float32Array(w*h);
-  for(let y=0;y<h;y++){const fy=Math.min(Math.max((y+.5)/f-.5,0),sh-1),y0=fy|0,y1=Math.min(y0+1,sh-1),ty=fy-y0;
-    for(let x=0;x<w;x++){const fx=Math.min(Math.max((x+.5)/f-.5,0),sw-1),x0=fx|0,x1=Math.min(x0+1,sw-1),tx=fx-x0;
-      bg[y*w+x]=(b[y0*sw+x0]*(1-tx)+b[y0*sw+x1]*tx)*(1-ty)+(b[y1*sw+x0]*(1-tx)+b[y1*sw+x1]*tx)*ty}}
-  return bg;
+function grayData(c){
+ const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;
+ const out=new Uint8Array(c.width*c.height);
+ for(let i=0;i<out.length;i++)out[i]=Math.round(.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2]);
+ return out;
 }
-
+function median31(src,w,h){
+ const out=new Uint8Array(src.length),hist=new Uint32Array(256),r=15;
+ for(let y=0;y<h;y++){
+  hist.fill(0);
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)hist[src[Math.max(0,Math.min(h-1,y+dy))*w+Math.max(0,Math.min(w-1,dx))]]++;
+  for(let x=0;x<w;x++){
+   let count=0,v=0;while(count<=480)count+=hist[v++];out[y*w+x]=v-1;
+   if(x+1<w)for(let dy=-r;dy<=r;dy++){
+    const row=Math.max(0,Math.min(h-1,y+dy))*w;
+    hist[src[row+Math.max(0,x-r)]]--;
+    hist[src[row+Math.min(w-1,x+r+1)]]++;
+   }
+  }
+ }return out;
+}
+function gaussian(src,w,h){
+ const weights=[],sigma=2;let sum=0;
+ for(let i=-6;i<=6;i++){const v=Math.exp(-i*i/(2*sigma*sigma));weights.push(v);sum+=v;}
+ const tmp=new Float32Array(src.length),out=new Float32Array(src.length);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let k=-6;k<=6;k++)v+=src[y*w+Math.max(0,Math.min(w-1,x+k))]*weights[k+6];tmp[y*w+x]=v/sum;}
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let k=-6;k<=6;k++)v+=tmp[Math.max(0,Math.min(h-1,y+k))*w+x]*weights[k+6];out[y*w+x]=v/sum;}
+ return out;
+}
 function enhance(c,o){
- const w=c.width,h=c.height,x=c.getContext('2d'),id=x.getImageData(0,0,w,h),d=id.data,n=w*h;
- let L=new Float32Array(n);for(let i=0;i<n;i++)L[i]=.299*d[4*i]+.587*d[4*i+1]+.114*d[4*i+2];
- const original=o.mode==='color'?Float32Array.from(L):null;
- if(o.bg){const bg=bgEstimate(L,w,h);for(let i=0;i<n;i++)L[i]=Math.min(255,L[i]*255/Math.max(bg[i],100));}
- if(o.denoise){const sm=boxBlur(L,w,h,1);for(let i=0;i<n;i++){const delta=sm[i]-L[i];if(Math.abs(delta)<12)L[i]+=delta*.45;}}
- // Thresholded, bounded unsharp masking avoids boosting low-level paper noise.
- const r=Math.max(1,Math.round(o.dpi/220));const bl=boxBlur(L,w,h,r);
- for(let i=0;i<n;i++){const detail=L[i]-bl[i],edge=Math.max(0,Math.abs(detail)-3);L[i]+=Math.sign(detail)*Math.min(28,o.sh*edge);}
- for(let i=0;i<n;i++){
- let v=Math.pow(Math.min(1,Math.max(0,L[i]/o.wh)),o.ga)*255;
- if(o.mode==='bw')v=v<o.threshold?0:255;
- const k=4*i;
- if(o.mode==='color'){
- // Blend toward white/black rather than multiplying channels into hard clipping.
- const old=original[i];for(let j=0;j<3;j++)d[k+j]=v>=old?d[k+j]+(255-d[k+j])*(v-old)/Math.max(255-old,1):d[k+j]*v/Math.max(old,1);
- }else d[k]=d[k+1]=d[k+2]=v;
- d[k+3]=255;
- }x.putImageData(id,0,0);
+ const w=c.width,h=c.height,src=grayData(c),small=makeCanvas(Math.max(1,Math.round(w*.1)),Math.max(1,Math.round(h*.1)));
+ const sx=small.getContext('2d');sx.imageSmoothingQuality='high';sx.drawImage(c,0,0,small.width,small.height);
+ const median=grayCanvas(median31(grayData(small),small.width,small.height),small.width,small.height);
+ const bg=makeCanvas(w,h);
+ const bx=bg.getContext('2d',{willReadFrequently:true});bx.imageSmoothingQuality='high';bx.drawImage(median,0,0,w,h);
+ const background=grayData(bg),corrected=new Uint8Array(src.length);
+ for(let i=0;i<src.length;i++)corrected[i]=Math.min(255,src[i]/Math.max(background[i],1)*255);
+ // Edge-preserving local denoising approximates OpenCV's non-local means in the browser.
+ const clean=new Uint8Array(src.length);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const i=y*w+x,center=corrected[i];let sum=0,weight=0;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+   const v=corrected[Math.max(0,Math.min(h-1,y+dy))*w+Math.max(0,Math.min(w-1,x+dx))];
+   const q=Math.exp(-((v-center)*(v-center))/288);sum+=v*q;weight+=q;
+  }clean[i]=sum/weight;
+ }
+ const sw=Math.round(w*1.5),sh=Math.round(h*1.5),up=makeCanvas(sw,sh);
+ const ux=up.getContext('2d',{willReadFrequently:true});ux.imageSmoothingQuality='high';
+ ux.drawImage(grayCanvas(clean,w,h),0,0,sw,sh);
+ const pixels=grayData(up),blur=gaussian(pixels,sw,sh),out=ux.createImageData(sw,sh);
+ for(let i=0;i<pixels.length;i++){
+  const sharp=Math.max(0,Math.min(255,pixels[i]+o.sh*(pixels[i]-blur[i])));
+  const v=Math.pow(Math.max(0,Math.min(1,(sharp-70)/165)),1.15)*255,k=i*4;
+  out.data[k]=out.data[k+1]=out.data[k+2]=v;out.data[k+3]=255;
+ }ux.putImageData(out,0,0);c.width=sw;c.height=sh;c.getContext('2d').drawImage(up,0,0);
+}
+const workerSupported=typeof Worker!=='undefined'&&typeof OffscreenCanvas!=='undefined'&&typeof Blob!=='undefined';
+const workerSource=[makeCanvas,grayCanvas,grayData,median31,gaussian,enhance].map(f=>f.toString()).join('\n')+`
+self.onmessage=async e=>{
+ try{
+  const {id,w,h,rgba,sh}=e.data,c=makeCanvas(w,h),x=c.getContext('2d');
+  x.putImageData(new ImageData(new Uint8ClampedArray(rgba),w,h),0,0);
+  enhance(c,{sh});
+  const blob=await c.convertToBlob({type:'image/png'}),bytes=await blob.arrayBuffer();
+  self.postMessage({id,bytes},[bytes]);
+ }catch(error){self.postMessage({id,error:error.message||String(error)});}
+};`;
+let workerUrl=null,nextJob=0;
+function createWorker(){
+ if(!workerUrl)workerUrl=URL.createObjectURL(new Blob([workerSource],{type:'text/javascript'}));
+ return new Worker(workerUrl);
+}
+function processInWorker(c,o){
+ const w=c.width,h=c.height,rgba=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+ const worker=createWorker(),id=++nextJob;
+ return new Promise((resolve,reject)=>{
+  worker.onmessage=e=>{worker.terminate();e.data.error?reject(new Error(e.data.error)):resolve(new Uint8Array(e.data.bytes));};
+  worker.onerror=e=>{worker.terminate();reject(new Error(e.message||'Worker 오류'));};
+  worker.postMessage({id,w,h,rgba:rgba.buffer,sh:o.sh},[rgba.buffer]);
+ });
+}
+async function processPage(c,o){
+ if(workerSupported)return processInWorker(c,o);
+ enhance(c,o);
+ const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));
+ if(!blob)throw new Error('이미지를 만들 메모리가 부족합니다.');
+ return new Uint8Array(await blob.arrayBuffer());
+}
+async function showPng(bytes,canvas){
+ const bitmap=await createImageBitmap(new Blob([bytes],{type:'image/png'}));
+ canvas.width=bitmap.width;canvas.height=bitmap.height;
+ canvas.getContext('2d').drawImage(bitmap,0,0);bitmap.close();
 }
 function later(){
  const token=++revision;clearTimeout(timer);if(!doc||busy||loading)return;
@@ -153,27 +197,36 @@ async function preview(token){
  if(token!==revision||busy||loading)return;
  let c;try{const o=opts();o.dpi=Math.min(o.dpi,160);const n=Math.max(1,Math.min(doc.numPages,Math.floor(+$('page').value)||1));$('page').value=n;
  ({c}=await render(n,o.dpi));if(token!==revision)return;
- const a=$('c0'),b=$('c1');a.width=b.width=c.width;a.height=b.height=c.height;a.getContext('2d').drawImage(c,0,0);
- await tick();if(token!==revision)return;enhance(c,o);b.getContext('2d').drawImage(c,0,0);$('previewStatus').textContent=`${n}페이지 · ${o.dpi} DPI 미리보기`;
+ const a=$('c0'),b=$('c1');a.width=c.width;a.height=c.height;a.getContext('2d').drawImage(c,0,0);
+ await tick();if(token!==revision)return;
+ const bytes=await processPage(c,o);if(token!==revision)return;
+ await showPng(bytes,b);$('previewStatus').textContent=`${n}페이지 · ${o.dpi} DPI 미리보기`;
  }finally{if(c)c.width=c.height=0;}
 }
-function refreshLabels(){for(const id of ['ga','wh','threshold'])$('v_'+id).textContent=$(id).value;$('threshold').disabled=$('mode').value!=='bw';}
-$('settings').addEventListener('input',()=>{refreshLabels();later()});$('page').onchange=later;
+$('settings').addEventListener('input',later);$('page').onchange=later;
 $('zoom').onchange=()=>$('pv').classList.toggle('zoom',$('zoom').checked);
-$('reset').onclick=()=>{$('dpi').value='300';document.querySelector('[name=sh][value="1"]').checked=true;$('ga').value='1.05';$('wh').value='250';$('mode').value='gray';$('format').value='jpeg';$('threshold').value='170';$('bg').checked=$('denoise').checked=false;refreshLabels();later()};
 function progress(p){$('bar').firstElementChild.style.width=p+'%';$('bar').setAttribute('aria-valuenow',Math.round(p));}
 $('cancel').onclick=()=>{cancelled=true;$('cancel').disabled=true;$('msg').textContent='현재 처리 단계를 마친 뒤 중단합니다…'};
 $('go').onclick=async()=>{
  if(!doc||busy||loading)return;busy=true;cancelled=false;revision++;clearTimeout(timer);lock(true);$('cancel').classList.remove('hide');$('cancel').disabled=false;progress(0);
  let pdf=null,c=null;
  try{await previewJob;const o=opts(),N=doc.numPages,{jsPDF}=window.jspdf;
+ const pending=new Map(),parallel=workerSupported?Math.min(2,Math.max(1,navigator.hardwareConcurrency||2)):1;
+ let next=1;
  for(let i=1;i<=N;i++){
- if(cancelled)break;$('msg').textContent=`${i} / ${N}페이지 처리 중…`;await tick();if(cancelled)break;
- const result=await render(i,o.dpi);c=result.c;const {pw,ph}=result;await tick();if(cancelled)break;
- enhance(c,o);await tick();if(cancelled)break;
- const png=o.format==='png',url=c.toDataURL(png?'image/png':'image/jpeg',.97);if(url==='data:,')throw new Error('이미지를 만들 메모리가 부족합니다. DPI를 낮춰 주세요.');
- const ori=pw>ph?'l':'p';if(!pdf)pdf=new jsPDF({unit:'pt',format:[pw,ph],orientation:ori,compress:true});else pdf.addPage([pw,ph],ori);
- pdf.addImage(url,png?'PNG':'JPEG',0,0,pw,ph,undefined,'FAST');c.width=c.height=0;c=null;progress(i/N*100);await tick();
+  while(next<=N&&pending.size<parallel&&!cancelled){
+   $('msg').textContent=`${next} / ${N}페이지 렌더링 및 병렬 처리 중…`;
+   const result=await render(next,o.dpi);c=result.c;
+   const job=processPage(c,o).then(bytes=>({bytes,pw:result.pw,ph:result.ph}),error=>({error}));
+   pending.set(next,job);c.width=c.height=0;c=null;next++;await tick();
+  }
+  if(cancelled)break;
+  const result=await pending.get(i);pending.delete(i);
+  if(result.error)throw result.error;
+  if(cancelled)break;
+  const {bytes,pw,ph}=result,ori=pw>ph?'l':'p';
+  if(!pdf)pdf=new jsPDF({unit:'pt',format:[pw,ph],orientation:ori,compress:true});else pdf.addPage([pw,ph],ori);
+  pdf.addImage(bytes,'PNG',0,0,pw,ph,undefined,'FAST');progress(i/N*100);await tick();
  }
  if(cancelled){$('msg').textContent='중단했습니다. 부분 PDF는 저장하지 않았습니다.';}
  else if(pdf){$('msg').textContent='PDF 저장 중…';await tick();if(cancelled){$('msg').textContent='중단했습니다. PDF는 저장하지 않았습니다.';}else{await pdf.save(base+'_선명화.pdf',{returnPromise:true});$('msg').textContent='완료했습니다. 다운로드 파일을 확인해 주세요.';}}
