@@ -2,11 +2,11 @@
 
 ## Project Structure & Module Organization
 
-The application lives in `pdf_upscalerr.html`. It contains the Korean user interface, CSS, and JavaScript in one file. The browser loads PDF.js and jsPDF from CDN script tags; there are no local assets, package manifest, or separate source and test directories. Keep related UI controls, their event handlers, and processing options aligned when editing this file.
+The application lives in `buddakPDF.html`. It contains the Korean user interface, CSS, and JavaScript in one file. The browser loads PDF.js and jsPDF from CDN script tags; there are no local assets, package manifest, or separate source and test directories. Keep related UI controls, their event handlers, and processing options aligned when editing this file.
 
 ## Development and Verification
 
-Open `pdf_upscalerr.html` in a modern browser to run the app. An internet connection is needed on first load for the CDN libraries. For local HTTP testing, run `python3 -m http.server 8000` from the repository root and visit `http://localhost:8000/pdf_upscalerr.html`. There is no build step or automated test command.
+Open `buddakPDF.html` in a modern browser to run the app. An internet connection is needed on first load for the CDN libraries. For local HTTP testing, run `python3 -m http.server 8000` from the repository root and visit `http://localhost:8000/buddakPDF.html`. There is no build step or automated test command.
 
 Verify changes manually with a small, multi-page scanned PDF: load it by file picker and drag and drop, inspect the before/after preview at each sharpening level, export the full PDF, and open the result. Check cancellation and an invalid file when changing those paths. Test both narrow and wide browser windows for layout changes.
 

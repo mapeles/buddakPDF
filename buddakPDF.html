@@ -83,7 +83,7 @@ async function load(f){
 async function render(n,dpi){
  const p=await doc.getPage(n),unit=p.getViewport({scale:1}),v=p.getViewport({scale:dpi/72});
  const w=Math.ceil(v.width),h=Math.ceil(v.height);
- if(w*h>10000000||w*1.5>16384||h*1.5>16384)throw new Error('페이지가 너무 큽니다. 입력 렌더링 DPI를 낮춰 주세요.');
+ if(w*h>40000000||w*1.5>16384||h*1.5>16384)throw new Error('브라우저의 이미지 크기 한도를 초과했습니다. 입력 렌더링 DPI를 낮춰 주세요.');
  const c=document.createElement('canvas');c.width=w;c.height=h;
  try{const x=c.getContext('2d',{willReadFrequently:true});await p.render({canvasContext:x,viewport:v,background:'rgb(255,255,255)'}).promise;
  return {c,pw:unit.width,ph:unit.height};}catch(e){c.width=c.height=0;throw e;}finally{p.cleanup();}
@@ -211,7 +211,7 @@ $('go').onclick=async()=>{
  if(!doc||busy||loading)return;busy=true;cancelled=false;revision++;clearTimeout(timer);lock(true);$('cancel').classList.remove('hide');$('cancel').disabled=false;progress(0);
  let pdf=null,c=null;
  try{await previewJob;const o=opts(),N=doc.numPages,{jsPDF}=window.jspdf;
- const pending=new Map(),parallel=workerSupported?Math.min(2,Math.max(1,navigator.hardwareConcurrency||2)):1;
+ const pending=new Map(),parallel=workerSupported&&o.dpi<=300?Math.min(2,Math.max(1,navigator.hardwareConcurrency||2)):1;
  let next=1;
  for(let i=1;i<=N;i++){
   while(next<=N&&pending.size<parallel&&!cancelled){
@@ -230,7 +230,7 @@ $('go').onclick=async()=>{
  }
  if(cancelled){$('msg').textContent='중단했습니다. 부분 PDF는 저장하지 않았습니다.';}
  else if(pdf){$('msg').textContent='PDF 저장 중…';await tick();if(cancelled){$('msg').textContent='중단했습니다. PDF는 저장하지 않았습니다.';}else{await pdf.save(base+'_선명화.pdf',{returnPromise:true});$('msg').textContent='완료했습니다. 다운로드 파일을 확인해 주세요.';}}
- }catch(e){$('msg').textContent='변환 실패: '+e.message+' 큰 문서는 DPI를 낮춰 다시 시도해 주세요.';}
+ }catch(e){$('msg').textContent='변환 실패: '+e.message;}
  finally{if(c)c.width=c.height=0;pdf=null;busy=false;lock(false);$('cancel').classList.add('hide');later();}
 };
 </script></body></html>
