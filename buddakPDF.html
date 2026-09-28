@@ -31,6 +31,8 @@ button:disabled{opacity:.45;cursor:default}
 #bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
 #bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
 #msg{font-size:13px;color:var(--mut);min-height:20px}
+#activity{margin-top:12px;background:#14191f;color:#d8e3ec;border-radius:9px;padding:12px;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+#activity .time{color:#8ba4b7}#activity .done{color:#8de3a4}#activity .error{color:#ff9c9c}
 .hide{display:none}
 
 fieldset{border:0;padding:0;margin:0;min-width:0}details{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer;font-weight:600}details .row{margin-top:16px}.hint{font-size:12px;color:var(--mut);margin:6px 0 0}.segments{display:flex;gap:8px;margin-top:6px}.segments label{flex:1;cursor:pointer;border:1px solid var(--line);border-radius:8px;text-align:center;padding:9px;color:var(--fg)}.segments label:has(input:checked){border-color:var(--acc);background:var(--bg);color:var(--acc);font-weight:700}.segments input{accent-color:var(--acc)}input[type=number]{width:75px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}.actions{display:flex;gap:10px}.secondary{background:var(--card);color:var(--fg);border:1px solid var(--line)}#cancel{width:auto;white-space:nowrap}#msg{margin-top:8px}button:focus-visible,summary:focus-visible,#drop:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
@@ -53,10 +55,17 @@ fieldset{border:0;padding:0;margin:0;min-width:0}details{margin-top:18px;border-
 <p class="hint">미리보기는 최대 160 DPI로 렌더링합니다. 저장 결과는 선택한 DPI와 원본 PDF 이미지에 따라 달라질 수 있습니다.</p></div>
 <div class="actions"><button id="go">전체 페이지 변환 후 PDF 저장</button><button class="secondary hide" id="cancel">중단</button></div>
 <div id="bar" role="progressbar" aria-label="변환 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><div id="msg" role="status" aria-live="polite"></div>
+<div class="card"><strong>처리 기록</strong><div id="activity" role="log" aria-label="PDF 처리 기록" aria-live="off"></div></div>
 <p class="hint">브라우저가 지원하면 최대 2개 페이지의 이미지 보정을 병렬로 처리합니다. 출력 PDF는 페이지 이미지로 저장되어 기존 검색·텍스트 선택·링크는 유지되지 않습니다. 큰 문서는 낮은 DPI부터 시도하세요.</p>
 </div></main><script>
 const $=id=>document.getElementById(id);
 const tick=()=>new Promise(r=>setTimeout(r,0));
+function log(message,type='info'){
+ const panel=$('activity'),line=document.createElement('div'),time=document.createElement('span');
+ time.className='time';time.textContent=`[${new Date().toLocaleTimeString('ko-KR')}] `;
+ line.className=type;line.append(time,document.createTextNode(message));panel.append(line);
+ while(panel.children.length>200)panel.firstElementChild.remove();panel.scrollTop=panel.scrollHeight;
+}
 let doc=null,base='out',busy=false,loading=false,cancelled=false,revision=0,timer=null,previewJob=Promise.resolve();
 const available=!!(window.pdfjsLib&&window.jspdf);
 if(available)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -76,7 +85,7 @@ async function load(f){
  task=pdfjsLib.getDocument({data:await f.arrayBuffer(),isEvalSupported:false});
  const next=await task.promise;if(doc)await doc.destroy();doc=next;base=f.name.replace(/\.pdf$/i,'');
  $('dropt').textContent=`${f.name} · ${doc.numPages}페이지 (눌러서 다른 파일 선택)`;
- $('pages').textContent=doc.numPages;$('page').max=doc.numPages;$('page').value=1;$('work').classList.remove('hide');$('msg').textContent='';progress(0);
+ $('pages').textContent=doc.numPages;$('page').max=doc.numPages;$('page').value=1;$('work').classList.remove('hide');$('msg').textContent='';progress(0);$('activity').replaceChildren();log(`${f.name} · ${doc.numPages}페이지 불러옴`,'done');
  }catch(e){if(task)await task.destroy();$('dropt').textContent='PDF를 열 수 없습니다. 눌러서 다시 선택해 주세요.';$('startup').textContent=e.name==='PasswordException'?'암호가 없는 PDF로 저장한 뒤 다시 선택해 주세요.':'파일 열기 오류: '+e.message;}
  finally{loading=false;lock(false);if(doc)later();}
 }
@@ -206,18 +215,21 @@ async function preview(token){
 $('settings').addEventListener('input',later);$('page').onchange=later;
 $('zoom').onchange=()=>$('pv').classList.toggle('zoom',$('zoom').checked);
 function progress(p){$('bar').firstElementChild.style.width=p+'%';$('bar').setAttribute('aria-valuenow',Math.round(p));}
-$('cancel').onclick=()=>{cancelled=true;$('cancel').disabled=true;$('msg').textContent='현재 처리 단계를 마친 뒤 중단합니다…'};
+$('cancel').onclick=()=>{cancelled=true;$('cancel').disabled=true;$('msg').textContent='현재 처리 단계를 마친 뒤 중단합니다…';log('중단 요청됨')};
 $('go').onclick=async()=>{
  if(!doc||busy||loading)return;busy=true;cancelled=false;revision++;clearTimeout(timer);lock(true);$('cancel').classList.remove('hide');$('cancel').disabled=false;progress(0);
  let pdf=null,c=null;
  try{await previewJob;const o=opts(),N=doc.numPages,{jsPDF}=window.jspdf;
  const pending=new Map(),parallel=workerSupported&&o.dpi<=300?Math.min(2,Math.max(1,navigator.hardwareConcurrency||2)):1;
+ log(`변환 시작 · ${N}페이지 · ${o.dpi} DPI · 동시 보정 ${parallel}개`);
  let next=1;
  for(let i=1;i<=N;i++){
   while(next<=N&&pending.size<parallel&&!cancelled){
    $('msg').textContent=`${next} / ${N}페이지 렌더링 및 병렬 처리 중…`;
+   log(`${next}/${N} 렌더링 시작`);await tick();
    const result=await render(next,o.dpi);c=result.c;
-   const job=processPage(c,o).then(bytes=>({bytes,pw:result.pw,ph:result.ph}),error=>({error}));
+   log(`${next}/${N} 렌더링 완료 · ${c.width}×${c.height}px, 보정 시작`);
+   const pageNo=next,job=processPage(c,o).then(bytes=>{log(`${pageNo}/${N} 보정 완료`,'done');return {bytes,pw:result.pw,ph:result.ph};},error=>({error}));
    pending.set(next,job);c.width=c.height=0;c=null;next++;await tick();
   }
   if(cancelled)break;
@@ -225,12 +237,13 @@ $('go').onclick=async()=>{
   if(result.error)throw result.error;
   if(cancelled)break;
   const {bytes,pw,ph}=result,ori=pw>ph?'l':'p';
+  log(`${i}/${N} PDF에 추가 중`);await tick();
   if(!pdf)pdf=new jsPDF({unit:'pt',format:[pw,ph],orientation:ori,compress:true});else pdf.addPage([pw,ph],ori);
-  pdf.addImage(bytes,'PNG',0,0,pw,ph,undefined,'FAST');progress(i/N*100);await tick();
+  pdf.addImage(bytes,'PNG',0,0,pw,ph,undefined,'FAST');progress(i/N*100);log(`${i}/${N} 완료 · ${Math.round(i/N*100)}%`,'done');await tick();
  }
- if(cancelled){$('msg').textContent='중단했습니다. 부분 PDF는 저장하지 않았습니다.';}
- else if(pdf){$('msg').textContent='PDF 저장 중…';await tick();if(cancelled){$('msg').textContent='중단했습니다. PDF는 저장하지 않았습니다.';}else{await pdf.save(base+'_선명화.pdf',{returnPromise:true});$('msg').textContent='완료했습니다. 다운로드 파일을 확인해 주세요.';}}
- }catch(e){$('msg').textContent='변환 실패: '+e.message;}
+ if(cancelled){$('msg').textContent='중단했습니다. 부분 PDF는 저장하지 않았습니다.';log('변환 중단됨');}
+ else if(pdf){$('msg').textContent='PDF 저장 중…';log('PDF 저장 중');await tick();if(cancelled){$('msg').textContent='중단했습니다. PDF는 저장하지 않았습니다.';log('저장 중단됨');}else{await pdf.save(base+'_선명화.pdf',{returnPromise:true});$('msg').textContent='완료했습니다. 다운로드 파일을 확인해 주세요.';log('PDF 저장 완료','done');}}
+ }catch(e){$('msg').textContent='변환 실패: '+e.message;log('오류: '+e.message,'error');}
  finally{if(c)c.width=c.height=0;pdf=null;busy=false;lock(false);$('cancel').classList.add('hide');later();}
 };
 </script></body></html>
