@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF 선명화 업스케일러</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--fg:#1c1c1a;--mut:#6b6b66;--line:#dcdcd6;--acc:#2a5bd7;--accfg:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#211f1e;--fg:#ececea;--mut:#9a9a94;--line:#3a3836;--acc:#6b93f5;--accfg:#101010}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:920px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:20px;margin:6px 0 2px}p.s{color:var(--mut);margin:0 0 14px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+#drop{border:2px dashed var(--line);text-align:center;padding:28px 10px;cursor:pointer;color:var(--mut)}
+#drop.on{border-color:var(--acc);color:var(--acc)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--mut)}label b{color:var(--fg);float:right;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:14px}
+.chk{display:flex;gap:8px;align-items:center;color:var(--fg);font-size:14px}
+button{background:var(--acc);color:var(--accfg);border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;width:100%}
+button:disabled{opacity:.45;cursor:default}
+.prev{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prev div{overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;max-height:70vh}
+.prev canvas{display:block;width:100%}.zoom .prev canvas{width:auto;max-width:none}
+.prev small{display:block;text-align:center;color:var(--mut);font-size:12px;margin-bottom:4px}
+#bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
+#bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+#msg{font-size:13px;color:var(--mut);min-height:20px}
+.hide{display:none}
+
+fieldset{border:0;padding:0;margin:0;min-width:0}details{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer;font-weight:600}details .row{margin-top:16px}.hint{font-size:12px;color:var(--mut);margin:6px 0 0}.segments{display:flex;gap:8px;margin-top:6px}.segments label{flex:1;cursor:pointer;border:1px solid var(--line);border-radius:8px;text-align:center;padding:9px;color:var(--fg)}.segments label:has(input:checked){border-color:var(--acc);background:var(--bg);color:var(--acc);font-weight:700}.segments input{accent-color:var(--acc)}input[type=number]{width:75px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}.actions{display:flex;gap:10px}.secondary{background:var(--card);color:var(--fg);border:1px solid var(--line)}#cancel{width:auto;white-space:nowrap}#msg{margin-top:8px}button:focus-visible,summary:focus-visible,#drop:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+</style>
+</head>
+<body><main>
+<h1>PDF 선명화 업스케일러</h1>
+<p class="s">스캔한 문서를 더 읽기 편하게. PDF 처리는 브라우저 안에서 이루어집니다.</p>
+<div class="card" id="drop" role="button" tabindex="0" aria-label="PDF 파일 선택"><div id="dropt">PDF를 여기에 끌어놓거나 눌러서 선택</div></div>
+<input type="file" id="file" accept="application/pdf,.pdf" class="hide">
+<p class="hint" id="startup">처음 열 때 인터넷 연결이 필요합니다. 처리 라이브러리만 불러오며 PDF 파일은 업로드하지 않습니다.</p>
+<div id="work" class="hide">
+<div class="card"><fieldset id="settings"><div class="row">
+<div><label for="dpi">출력 해상도</label><select id="dpi"><option value="200">200 DPI · 작은 용량</option><option value="300" selected>300 DPI · 권장</option><option value="400">400 DPI · 정밀</option><option value="600">600 DPI · 큰 용량</option></select></div>
+<div><label id="sh-label">샤프닝</label><div class="segments" role="radiogroup" aria-labelledby="sh-label"><label><input type="radio" name="sh" value="0.5"> 약</label><label><input type="radio" name="sh" value="1" checked> 보통</label><label><input type="radio" name="sh" value="1.7"> 강</label></div></div>
+</div><p class="hint">사진·옅은 필기는 ‘약’, 일반 문서는 ‘보통’을 권장합니다. ‘강’은 글자 주변 테두리가 두드러질 수 있습니다.</p>
+<details><summary>고급옵션</summary><div class="row">
+<div><label for="mode">문서 색상</label><select id="mode"><option value="gray">회색조 · 일반 문서</option><option value="color">컬러 유지 · 도장 / 사진</option><option value="bw">흑백 2색 · 글자 위주 문서</option></select><p class="hint">흑백 2색은 사진과 옅은 필기가 손실될 수 있습니다.</p></div>
+<div><label for="format">저장 품질</label><select id="format"><option value="jpeg">고품질 JPEG · 용량 균형</option><option value="png">무손실 PNG · 글자 보존 우선</option></select><p class="hint">PNG는 추가 압축 손실이 없지만 파일이 커질 수 있습니다.</p></div>
+<div><label for="ga">글자 진하기 <b id="v_ga">1.05</b></label><input type="range" id="ga" min="0.7" max="1.6" step="0.05" value="1.05"></div>
+<div><label for="wh">흰 배경 기준 <b id="v_wh">250</b></label><input type="range" id="wh" min="210" max="255" step="1" value="250"><p class="hint">낮추면 배경이 밝아지지만 옅은 내용도 사라질 수 있습니다.</p></div>
+<label class="chk"><input type="checkbox" id="bg"> 종이 배경 밝기 균일화</label>
+<label class="chk"><input type="checkbox" id="denoise"> 약한 노이즈 완화</label>
+<div><label for="threshold">흑백 2색 기준 <b id="v_threshold">170</b></label><input type="range" id="threshold" min="80" max="220" value="170" disabled></div>
+<div><button type="button" class="secondary" id="reset">권장 설정으로 초기화</button></div>
+</div><p class="hint">배경 보정은 그림자·회색기를 줄입니다. 사진이나 색지 문서는 꺼두세요. 노이즈 완화는 작은 글자도 부드러워질 수 있어 기본으로 꺼져 있습니다.</p></details></fieldset></div>
+<div class="card" id="pv"><div class="chk" style="justify-content:space-between;flex-wrap:wrap;margin-bottom:10px"><label for="page">미리보기 페이지 <input type="number" id="page" value="1" min="1" step="1"> / <span id="pages">1</span></label><label class="chk"><input type="checkbox" id="zoom"> 100% 확대</label></div>
+<p class="hint" id="previewStatus" role="status"></p><div class="prev"><div><small>원본 렌더링</small><canvas id="c0"></canvas></div><div><small>보정 후 · 저장 전</small><canvas id="c1"></canvas></div></div>
+<p class="hint">미리보기는 최대 160 DPI입니다. 실제 저장 해상도와 압축에 따라 세부 표현은 달라집니다.</p></div>
+<div class="actions"><button id="go">전체 페이지 변환 후 PDF 저장</button><button class="secondary hide" id="cancel">중단</button></div>
+<div id="bar" role="progressbar" aria-label="변환 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><div id="msg" role="status" aria-live="polite"></div>
+<p class="hint">원본에 없는 디테일을 복원하는 AI 업스케일링은 아닙니다. 출력 PDF는 페이지 이미지로 저장되어 기존 검색·텍스트 선택·링크는 유지되지 않습니다. 큰 문서는 낮은 DPI부터 시도하세요.</p>
+</div></main><script>
+const $=id=>document.getElementById(id);
+const tick=()=>new Promise(r=>setTimeout(r,0));
+let doc=null,base='out',busy=false,loading=false,cancelled=false,revision=0,timer=null,previewJob=Promise.resolve();
+const available=!!(window.pdfjsLib&&window.jspdf);
+if(available)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+else $('startup').textContent='필요한 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.';
+const opts=()=>({dpi:+$('dpi').value,sh:+document.querySelector('[name=sh]:checked').value,ga:+$('ga').value,wh:+$('wh').value,bg:$('bg').checked,denoise:$('denoise').checked,mode:$('mode').value,threshold:+$('threshold').value,format:$('format').value});
+function lock(on){$('settings').disabled=on;$('page').disabled=on;$('go').disabled=on;$('file').disabled=on;$('drop').setAttribute('aria-disabled',String(on));}
+const drop=$('drop'),inp=$('file');
+drop.onclick=()=>{if(!busy&&!loading&&available)inp.click()};
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();drop.click()}};
+drop.ondragover=e=>{e.preventDefault();if(!busy&&!loading)drop.classList.add('on')};
+drop.ondragleave=()=>drop.classList.remove('on');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0])};
+inp.onchange=()=>{if(inp.files[0])load(inp.files[0]);inp.value=''};
+async function load(f){
+ if(busy||loading||!available)return;loading=true;lock(true);revision++;clearTimeout(timer);let task=null;
+ try{await previewJob;$('dropt').textContent='불러오는 중…';
+ task=pdfjsLib.getDocument({data:await f.arrayBuffer(),isEvalSupported:false});
+ const next=await task.promise;if(doc)await doc.destroy();doc=next;base=f.name.replace(/\.pdf$/i,'');
+ $('dropt').textContent=`${f.name} · ${doc.numPages}페이지 (눌러서 다른 파일 선택)`;
+ $('pages').textContent=doc.numPages;$('page').max=doc.numPages;$('page').value=1;$('work').classList.remove('hide');$('msg').textContent='';progress(0);
+ }catch(e){if(task)await task.destroy();$('dropt').textContent='PDF를 열 수 없습니다. 눌러서 다시 선택해 주세요.';$('startup').textContent=e.name==='PasswordException'?'암호가 없는 PDF로 저장한 뒤 다시 선택해 주세요.':'파일 열기 오류: '+e.message;}
+ finally{loading=false;lock(false);if(doc)later();}
+}
+async function render(n,dpi){
+ const p=await doc.getPage(n),unit=p.getViewport({scale:1}),v=p.getViewport({scale:dpi/72});
+ const w=Math.ceil(v.width),h=Math.ceil(v.height);
+ if(w*h>24000000||w>16384||h>16384)throw new Error('페이지가 너무 큽니다. 출력 DPI를 낮춰 주세요.');
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ try{const x=c.getContext('2d',{willReadFrequently:true});await p.render({canvasContext:x,viewport:v,background:'rgb(255,255,255)'}).promise;
+ return {c,pw:unit.width,ph:unit.height};}catch(e){c.width=c.height=0;throw e;}finally{p.cleanup();}
+}
+function boxBlur(src,w,h,r){
+  const t=new Float32Array(src.length),o=new Float32Array(src.length),k=2*r+1;
+  for(let y=0;y<h;y++){const R=y*w;let a=0;
+    for(let i=-r;i<=r;i++)a+=src[R+Math.min(Math.max(i,0),w-1)];
+    for(let x=0;x<w;x++){t[R+x]=a/k;a+=src[R+Math.min(x+r+1,w-1)]-src[R+Math.max(x-r,0)]}}
+  for(let x=0;x<w;x++){let a=0;
+    for(let i=-r;i<=r;i++)a+=t[Math.min(Math.max(i,0),h-1)*w+x];
+    for(let y=0;y<h;y++){o[y*w+x]=a/k;a+=t[Math.min(y+r+1,h-1)*w+x]-t[Math.max(y-r,0)*w+x]}}
+  return o;
+}
+function bgEstimate(L,w,h){            // 종이 밝기 추정: 블록 평균 → 최대값 팽창 → 블러 → 보간
+  const f=Math.max(4,Math.round(Math.max(w,h)/350)),sw=Math.ceil(w/f),sh=Math.ceil(h/f);
+  let s=new Float32Array(sw*sh),cnt=new Float32Array(sw*sh);
+  for(let y=0;y<h;y++){const R=(y/f|0)*sw;for(let x=0;x<w;x++){const j=R+(x/f|0);s[j]+=L[y*w+x];cnt[j]++}}
+  for(let i=0;i<s.length;i++)s[i]/=cnt[i];
+  const d=4,m=new Float32Array(s.length);
+  for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){let mx=0;
+    for(let dy=-d;dy<=d;dy++){const yy=Math.min(Math.max(y+dy,0),sh-1);
+      for(let dx=-d;dx<=d;dx++){const v=s[yy*sw+Math.min(Math.max(x+dx,0),sw-1)];if(v>mx)mx=v}}
+    m[y*sw+x]=mx}
+  const b=boxBlur(m,sw,sh,2),bg=new Float32Array(w*h);
+  for(let y=0;y<h;y++){const fy=Math.min(Math.max((y+.5)/f-.5,0),sh-1),y0=fy|0,y1=Math.min(y0+1,sh-1),ty=fy-y0;
+    for(let x=0;x<w;x++){const fx=Math.min(Math.max((x+.5)/f-.5,0),sw-1),x0=fx|0,x1=Math.min(x0+1,sw-1),tx=fx-x0;
+      bg[y*w+x]=(b[y0*sw+x0]*(1-tx)+b[y0*sw+x1]*tx)*(1-ty)+(b[y1*sw+x0]*(1-tx)+b[y1*sw+x1]*tx)*ty}}
+  return bg;
+}
+
+function enhance(c,o){
+ const w=c.width,h=c.height,x=c.getContext('2d'),id=x.getImageData(0,0,w,h),d=id.data,n=w*h;
+ let L=new Float32Array(n);for(let i=0;i<n;i++)L[i]=.299*d[4*i]+.587*d[4*i+1]+.114*d[4*i+2];
+ const original=o.mode==='color'?Float32Array.from(L):null;
+ if(o.bg){const bg=bgEstimate(L,w,h);for(let i=0;i<n;i++)L[i]=Math.min(255,L[i]*255/Math.max(bg[i],100));}
+ if(o.denoise){const sm=boxBlur(L,w,h,1);for(let i=0;i<n;i++){const delta=sm[i]-L[i];if(Math.abs(delta)<12)L[i]+=delta*.45;}}
+ // Thresholded, bounded unsharp masking avoids boosting low-level paper noise.
+ const r=Math.max(1,Math.round(o.dpi/220));const bl=boxBlur(L,w,h,r);
+ for(let i=0;i<n;i++){const detail=L[i]-bl[i],edge=Math.max(0,Math.abs(detail)-3);L[i]+=Math.sign(detail)*Math.min(28,o.sh*edge);}
+ for(let i=0;i<n;i++){
+ let v=Math.pow(Math.min(1,Math.max(0,L[i]/o.wh)),o.ga)*255;
+ if(o.mode==='bw')v=v<o.threshold?0:255;
+ const k=4*i;
+ if(o.mode==='color'){
+ // Blend toward white/black rather than multiplying channels into hard clipping.
+ const old=original[i];for(let j=0;j<3;j++)d[k+j]=v>=old?d[k+j]+(255-d[k+j])*(v-old)/Math.max(255-old,1):d[k+j]*v/Math.max(old,1);
+ }else d[k]=d[k+1]=d[k+2]=v;
+ d[k+3]=255;
+ }x.putImageData(id,0,0);
+}
+function later(){
+ const token=++revision;clearTimeout(timer);if(!doc||busy||loading)return;
+ $('previewStatus').textContent='미리보기 갱신 중…';
+ timer=setTimeout(()=>{previewJob=previewJob.then(()=>preview(token)).catch(e=>{$('previewStatus').textContent='미리보기 오류: '+e.message});},220);
+}
+async function preview(token){
+ if(token!==revision||busy||loading)return;
+ let c;try{const o=opts();o.dpi=Math.min(o.dpi,160);const n=Math.max(1,Math.min(doc.numPages,Math.floor(+$('page').value)||1));$('page').value=n;
+ ({c}=await render(n,o.dpi));if(token!==revision)return;
+ const a=$('c0'),b=$('c1');a.width=b.width=c.width;a.height=b.height=c.height;a.getContext('2d').drawImage(c,0,0);
+ await tick();if(token!==revision)return;enhance(c,o);b.getContext('2d').drawImage(c,0,0);$('previewStatus').textContent=`${n}페이지 · ${o.dpi} DPI 미리보기`;
+ }finally{if(c)c.width=c.height=0;}
+}
+function refreshLabels(){for(const id of ['ga','wh','threshold'])$('v_'+id).textContent=$(id).value;$('threshold').disabled=$('mode').value!=='bw';}
+$('settings').addEventListener('input',()=>{refreshLabels();later()});$('page').onchange=later;
+$('zoom').onchange=()=>$('pv').classList.toggle('zoom',$('zoom').checked);
+$('reset').onclick=()=>{$('dpi').value='300';document.querySelector('[name=sh][value="1"]').checked=true;$('ga').value='1.05';$('wh').value='250';$('mode').value='gray';$('format').value='jpeg';$('threshold').value='170';$('bg').checked=$('denoise').checked=false;refreshLabels();later()};
+function progress(p){$('bar').firstElementChild.style.width=p+'%';$('bar').setAttribute('aria-valuenow',Math.round(p));}
+$('cancel').onclick=()=>{cancelled=true;$('cancel').disabled=true;$('msg').textContent='현재 처리 단계를 마친 뒤 중단합니다…'};
+$('go').onclick=async()=>{
+ if(!doc||busy||loading)return;busy=true;cancelled=false;revision++;clearTimeout(timer);lock(true);$('cancel').classList.remove('hide');$('cancel').disabled=false;progress(0);
+ let pdf=null,c=null;
+ try{await previewJob;const o=opts(),N=doc.numPages,{jsPDF}=window.jspdf;
+ for(let i=1;i<=N;i++){
+ if(cancelled)break;$('msg').textContent=`${i} / ${N}페이지 처리 중…`;await tick();if(cancelled)break;
+ const result=await render(i,o.dpi);c=result.c;const {pw,ph}=result;await tick();if(cancelled)break;
+ enhance(c,o);await tick();if(cancelled)break;
+ const png=o.format==='png',url=c.toDataURL(png?'image/png':'image/jpeg',.97);if(url==='data:,')throw new Error('이미지를 만들 메모리가 부족합니다. DPI를 낮춰 주세요.');
+ const ori=pw>ph?'l':'p';if(!pdf)pdf=new jsPDF({unit:'pt',format:[pw,ph],orientation:ori,compress:true});else pdf.addPage([pw,ph],ori);
+ pdf.addImage(url,png?'PNG':'JPEG',0,0,pw,ph,undefined,'FAST');c.width=c.height=0;c=null;progress(i/N*100);await tick();
+ }
+ if(cancelled){$('msg').textContent='중단했습니다. 부분 PDF는 저장하지 않았습니다.';}
+ else if(pdf){$('msg').textContent='PDF 저장 중…';await tick();if(cancelled){$('msg').textContent='중단했습니다. PDF는 저장하지 않았습니다.';}else{await pdf.save(base+'_선명화.pdf',{returnPromise:true});$('msg').textContent='완료했습니다. 다운로드 파일을 확인해 주세요.';}}
+ }catch(e){$('msg').textContent='변환 실패: '+e.message+' 큰 문서는 DPI를 낮춰 다시 시도해 주세요.';}
+ finally{if(c)c.width=c.height=0;pdf=null;busy=false;lock(false);$('cancel').classList.add('hide');later();}
+};
+</script></body></html>
